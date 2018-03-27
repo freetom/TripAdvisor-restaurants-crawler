@@ -85,8 +85,8 @@ def parse_restaurant(link):
             rating = 'n\\a'
 
         try:
-            tmp = content.split('data-phonenumber="')[1]
-            phone_number = tmp[:tmp.index('"')]
+            tmp = content.split('<span class="ui_icon phone"></span><span>')[1]
+            phone_number = tmp[:tmp.index('<')]
         except:
             phone_number = 'n\\a'
 
