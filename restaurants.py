@@ -3,6 +3,15 @@ import sys
 import json
 from collections import OrderedDict
 
+def make_get(url):
+    r = ''
+    while r=='':
+        try:
+            r = requests.get(url, timeout=25)
+        except Exception as e:
+            sleep(10)
+    return r
+
 # Given a link (left,right) returns its Nth page
 # TripAdvisor is crawlable by using links of the following form:
 # Base link:    /Restaurants-g187870-Venice_Veneto.html
@@ -27,7 +36,7 @@ def explore(base_link):
     i = 20
     res = True
     while res:
-        r = requests.get('https://www.tripadvisor.com'+compose(left, right, i))
+        r = make_get('https://www.tripadvisor.com'+compose(left, right, i))
         if r.status_code != 200:
             res = False
         elif r.content:
@@ -47,7 +56,7 @@ def explore(base_link):
 # Search a keyword on TripAdvisor and return the first link for the restaurants
 def search(keyword):
     url = 'https://www.tripadvisor.com/TypeAheadJson?action=API&types=geo%2Cnbrhd%2Ceat%2Ctheme_park&filter=&legacy_format=true&urlList=true&strictParent=true&query='+keyword+'&max=6&name_depth=3&interleaved=true&scoreThreshold=0.5&strictAnd=false&typeahead1_5=true&disableMaxGroupSize=true&geoBoostFix=true&neighborhood_geos=true&details=true&link_type=hotel%2Cvr%2Ceat%2Cattr&rescue=true&uiOrigin=trip_search_Restaurants&source=trip_search_Restaurants&nearPages=true'
-    r = requests.get(url)
+    r = make_get(url)
     content = json.loads(r.content)
     for category in content[0]['urls']:
         if category['type']=='EATERY':
@@ -66,7 +75,7 @@ def parse_restaurant(link):
     #   To prevent wrong links from being parsed..
     if '/Restaurant' != link[:len('/Restaurant')]:
         return
-    r = requests.get('https://tripadvisor.com'+link)
+    r = make_get('https://tripadvisor.com'+link)
     #   Temp fix to detect redirects that send us in undesired pages
     if len(r.history)>1:
         return
@@ -113,7 +122,7 @@ def find_all_restaurants(link):
     geo = link[i:j]
 
     #calculate max
-    r = requests.get('https://tripadvisor.com'+link)
+    r = make_get('https://tripadvisor.com'+link)
     splice = r.content.split('data-offset="')[1:]
     max_page = 0
     for piece in splice:
@@ -128,7 +137,7 @@ def find_all_restaurants(link):
         """ Note the `geo` parameter for location and `i` for the offset"""
         endpoint = 'https://www.tripadvisor.com/RestaurantSearch?Action=PAGE&geo='+geo+'&ajax=1&sortOrder=relevance&o=a'+str(i)+'&availSearchEnabled=false'
         #print endpoint
-        r = requests.get(endpoint)
+        r = make_get(endpoint)
         if r.status_code != 200:
             end = True
         else:
@@ -166,7 +175,7 @@ def parse_result_page(content):
 # Parse the first page of results
 def parse_first_result_page(link):
     #print 'Root page: '+link
-    content = requests.get('https://www.tripadvisor.com'+link).content
+    content = make_get('https://www.tripadvisor.com'+link).content
     locations = content.split('<div class="geo_name">')[1:]
     for location in locations:
         tmp = location.split('<a href="')[1]
